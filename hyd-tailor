@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Gunadeep — Job Switch HQ</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/docx@9.5.3/build/index.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;font-size:14px}
+.shell{max-width:800px;margin:0 auto;padding:1.25rem 1rem 4rem}
+input,select,textarea,button{font-family:inherit;font-size:13px}
+input,select{padding:7px 10px;border-radius:8px;border:0.5px solid #d3d1c7;background:#fff;color:#1a1a1a;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:#888}
+textarea{padding:8px 10px;border-radius:8px;border:0.5px solid #d3d1c7;background:#fff;color:#1a1a1a;outline:none;width:100%;resize:vertical}
+button{cursor:pointer}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .18s ease}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="shell"><div id="root"></div></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
+const ROLES_T=[
+  {id:"spm",label:"Senior Program Manager",color:"#0F6E56"},
+  {id:"bom",label:"Business Operations Manager",color:"#534AB7"},
+  {id:"sgm",label:"Strategy & Growth Manager",color:"#993C1D"},
+  {id:"pom",label:"Product Operations Manager",color:"#185FA5"},
+  {id:"cos",label:"Chief of Staff / Founder's Office",color:"#993556"},
+];
+const PORTALS=["LinkedIn","Naukri","iimjobs","Wellfound","Foundit","Company Direct","Referral","Recruiter Outreach","CutShort","Other"];
+const STAGES=["Applied","Screening Call","Interview R1","Interview R2","Final Round","Offer","Rejected","No Response"];
+const SC={Applied:"#E6F1FB","Screening Call":"#FAEEDA","Interview R1":"#EAF3DE","Interview R2":"#EAF3DE","Final Round":"#EEEDFE",Offer:"#E1F5EE",Rejected:"#FCEBEB","No Response":"#F1EFE8"};
+const ST={Applied:"#0C447C","Screening Call":"#633806","Interview R1":"#27500A","Interview R2":"#27500A","Final Round":"#3C3489",Offer:"#085041",Rejected:"#A32D2D","No Response":"#5F5E5A"};
+const W_TARGET=10,R_TARGET=3;
+const SKEY="gunadeep_hq_v3";
+
+const CONTACT={name:"Gunadeep Sai",iit:"IIT (BHU) Varanasi",phone:"+91-7386233555",email:"gunadeepsai@gmail.com",linkedin:"linkedin.com/in/gunadeep-sai-sadasivuni",location:"Hyderabad (open to relocate)",cars24desc:"India\u2019s largest used car platform  |  Series E  |  $1.84B valuation  |  10,000+ employees",scope:"Scope expanded: Operations & Expansion \u2192 Founder\u2019s Office \u2192 Growth & Marketing  |  2019\u2013Present"};
+
+const RESUME={
+  spm:{headline:"Senior Program Manager  |  Business Transformation  |  P&L Governance",summary:"IIT (BHU) Varanasi graduate with 6+ years of senior-scope program management at Cars24. Governed $10M+ budgets, built 0\u21921 systems saving 2,880 annual man-hours, drove 15-city market expansions, and delivered CXO-level decision support across ops, product, and growth.",sections:[{role:"Program Manager \u2013 Growth & Marketing",dates:"May 2025 \u2013 Present",bullets:["Built and scaled ASO framework across 8 apps (Consumer, B2B, International), driving ~32% growth in monthly installs from 533K \u2192 704K within 9 months","Improved store CVR by 9% through cohort-based Custom Store Listings and intent-driven experimentation","Scaled GMB operations: impressions 1.8M \u2192 3.2M (+78%), clicks 143K \u2192 267K, reviews 1.3K \u2192 4.8K (~3.6x) in 6 months","Owned SEO backlink strategy across 50+ domains/month, increasing high-DA referrals 2.5% \u2192 4.0%"]},{role:"Program Manager \u2013 Founder\u2019s Office",dates:"Aug 2024 \u2013 Apr 2025",bullets:["Provided CXO-level decision support through Monthly Marketing Reviews \u2014 surfaced 2 net-new metrics directly triggering homepage redesign","Led executive performance reviews (QOP, MD&A, MBR) for C-suite, increasing Indian geography visibility from 6% to 9%","Diagnosed funnel drop-offs and realigned API logic, growing car valuation MAU from 29K to 50K (~72% growth)","Designed cross-BU Orbit strategy, driving 8.2K monthly users through internal acquisition","Restructured ticketing workflows \u2014 improving issue resolution from <30% to 65%+"]},{role:"Program Manager \u2013 Expansion (Ops & Product)",dates:"May 2019 \u2013 Jul 2024",bullets:["Governed $10M program budget, mitigating 80% of financial and operational risks, reducing YOY exposure by 40%","Streamlined $7.3M in annual overhead transactions across C2B and C2C channels","Supervised $9.7M real estate and civil project portfolio, enhancing audit visibility from 55% to 90%","Orchestrated Salesforce CRM 0\u21921 \u2014 saving 2,880 annual man-hours and lifting success rate from 65% to 97% within one month","Automated GST POB and P2P via Salesforce, recovering 98% of $351K defaulted amounts, TAT 21 \u2192 8 days (57%)","Launched C2B operations across 15 Tier 2 & 3 cities in 5 months, achieving 32% market penetration growth","Negotiated $0.9M in annual savings; brokered Ford/Nissan/OYO partnerships improving C2B conversion by 5%"]}]},
+  bom:{headline:"Business Operations Manager  |  P&L Owner  |  0\u21921 Builder  |  Process Transformation",summary:"IIT (BHU) Varanasi graduate with 6+ years building and governing business operations from the ground up. Streamlined $7.3M in annual transactions, saved 2,880 man-hours via Salesforce 0\u21921, and launched operations across 15 cities across C2B, B2B, and B2C models.",sections:[{role:"Program Manager \u2013 Expansion (Ops & Product)",dates:"May 2019 \u2013 Jul 2024",bullets:["Streamlined $7.3M in annual overhead transactions across C2B and C2C through end-to-end budgeting and governance","Orchestrated Salesforce CRM 0\u21921 \u2014 saving 2,880 annual man-hours, lifting success rate 65% \u2192 97% in one month","Automated GST POB and P2P workflows, recovering 98% of $351K defaulted amounts, TAT \u2193 57%","Supervised $9.7M real estate portfolio, audit visibility 55% \u2192 90%","Built multi-function dashboards \u2014 department productivity 76% \u2192 84% QOQ","Governed $10M program budget, mitigating 80% of risks","Launched C2B ops across 15 Tier 2 & 3 cities in 5 months (32% market penetration growth)","Built customer experience centres 0\u21921 \u2014 4,820 vehicles catalogued, ~850 sales in 7 months","Negotiated $0.9M annual savings; Ford/Nissan/OYO partnerships +5% C2B conversion"]},{role:"Program Manager \u2013 Founder\u2019s Office",dates:"Aug 2024 \u2013 Apr 2025",bullets:["Redesigned ticketing workflows \u2014 issue resolution <30% \u2192 65%+","Owned Monthly Marketing Reviews \u2014 surfaced 2 net-new metrics triggering homepage redesign","Led CXO reviews (QOP, MD&A, MBR), Indian geography visibility 6% \u2192 9%","Diagnosed funnel drop-offs, MAU 29K \u2192 50K (~72%)","Cross-BU Orbit strategy driving 8.2K monthly users"]},{role:"Program Manager \u2013 Growth & Marketing",dates:"May 2025 \u2013 Present",bullets:["ASO framework across 8 apps \u2014 32% install growth (533K \u2192 704K)","GMB: impressions +78%, reviews 1.3K \u2192 4.8K (~3.6x)","Store CVR +9% via cohort-based Custom Store Listings"]}]},
+  sgm:{headline:"Strategy & Growth Manager  |  Market Expansion  |  CXO Advisory  |  P&L Owner",summary:"IIT (BHU) Varanasi graduate with 6+ years designing and executing growth strategies. Launched 15-city operations in 5 months, governed $10M programs, drove 72% MAU growth, and delivered CXO-level strategic insights that shaped board decisions.",sections:[{role:"Program Manager \u2013 Founder\u2019s Office",dates:"Aug 2024 \u2013 Apr 2025",bullets:["CXO-level strategic decision support \u2014 surfaced 2 net-new metrics triggering homepage redesign","Led executive reviews (QOP, MD&A, MBR), Indian geography visibility 6% \u2192 9%","Designed cross-BU Orbit growth strategy driving 8.2K monthly users through internal channels","Diagnosed funnel drop-offs, MAU 29K \u2192 50K (~72% growth)","Restructured operations, issue resolution <30% \u2192 65%+"]},{role:"Program Manager \u2013 Expansion (Ops & Product)",dates:"May 2019 \u2013 Jul 2024",bullets:["Launched C2B e-commerce across 15 Tier 2 & 3 cities in 5 months \u2014 32% market penetration growth","Brokered Ford/Nissan/OYO partnerships, C2B conversion +5%","Governed $10M program budget, 80% risk mitigation; streamlined $7.3M annual transactions","Built dashboards: dept productivity 76% \u2192 84% QOQ","Supervised $9.7M real estate portfolio (audit 55% \u2192 90%)","Negotiated $0.9M annual savings","Built customer centres 0\u21921 \u2014 4,820 vehicles, ~850 sales"]},{role:"Program Manager \u2013 Growth & Marketing",dates:"May 2025 \u2013 Present",bullets:["ASO framework 8 apps \u2014 32% install growth (533K \u2192 704K)","GMB: +78% impressions, reviews 1.3K \u2192 4.8K (~3.6x), clicks 143K \u2192 267K","SEO backlinks 50+ domains/month (DA 2.5% \u2192 4.0%)"]}]},
+  pom:{headline:"Product Operations Manager  |  Growth & Automation  |  ASO \u2022 SEO \u2022 CRM",summary:"IIT (BHU) Varanasi graduate with 6+ years bridging product, engineering, and business. Grew car valuation MAU by 72%, built ASO frameworks delivering 32% install growth, orchestrated Salesforce 0\u21921 saving 2,880 hours, and scaled GMB to 3.6x review growth.",sections:[{role:"Program Manager \u2013 Growth & Marketing",dates:"May 2025 \u2013 Present",bullets:["ASO framework for 8 apps \u2014 ~32% install growth (533K \u2192 704K) in 9 months","Play Store and App Store CVR +9% through cohort-based Custom Store Listings and A/B experimentation","GMB: impressions 1.8M \u2192 3.2M (+78%), clicks 143K \u2192 267K, reviews 1.3K \u2192 4.8K (~3.6x)","SEO backlinks 50+ domains/month, high-DA referrals 2.5% \u2192 4.0%"]},{role:"Program Manager \u2013 Founder\u2019s Office",dates:"Aug 2024 \u2013 Apr 2025",bullets:["Diagnosed root-cause funnel drop-offs, realigned API logic \u2014 MAU 29K \u2192 50K (~72%)","Cross-BU Orbit visibility strategy driving 8.2K monthly users via internal acquisition","Launched \u2018Orbit Wrapped\u2019 (0\u21921) personalised insights feature without app release dependency","Owned Monthly Marketing Reviews \u2014 surfaced 2 net-new metrics triggering homepage redesign","CRM segmentation, CTR 12% \u2192 18.6%","Restructured ticketing, issue resolution <30% \u2192 65%+"]},{role:"Program Manager \u2013 Expansion (Ops & Product)",dates:"May 2019 \u2013 Jul 2024",bullets:["Salesforce CRM 0\u21921 \u2014 2,880 man-hours saved, 65% \u2192 97% transactional rate in 1 month","GST POB & P2P automation: 98% of $351K recovered, TAT \u2193 57%","Governed $10M program; $7.3M transactions streamlined; 15-city C2B ops (32% market growth)","$0.9M annual savings; 4,820 vehicles catalogued"]}]},
+  cos:{headline:"Chief of Staff  |  Founder\u2019s Office  |  Strategic Operations  |  CXO Decision Support",summary:"IIT (BHU) Varanasi graduate with 6+ years at the intersection of founder vision and execution. Delivered CXO-level decision intelligence, governed $10M+ programs, built 0\u21921 systems saving 2,880 annual man-hours, executed a founder-mandated 15-city expansion in 5 months.",sections:[{role:"Program Manager \u2013 Founder\u2019s Office",dates:"Aug 2024 \u2013 Apr 2025",bullets:["Owned Monthly Marketing Reviews (Orbit, SuperApp) \u2014 surfaced 2 net-new metrics directly triggering homepage redesign","Led CXO reviews (QOP, MD&A, MBR) \u2014 Indian geography visibility 6% \u2192 9%","Cross-BU Orbit strategy driving 8.2K monthly users via internal channels","Restructured ticketing and prioritisation \u2014 resolution <30% \u2192 65%+","MAU 29K \u2192 50K (+72%) through funnel diagnosis and API alignment","CRM segmentation, CTR 12% \u2192 18.6%"]},{role:"Program Manager \u2013 Expansion \u2014 Founder-mandated",dates:"May 2019 \u2013 Jul 2024",bullets:["Governed $10M program, 80% risk mitigation; streamlined $7.3M annual transactions","Supervised $9.7M real estate portfolio (audit 55% \u2192 90%)","Salesforce CRM 0\u21921 \u2014 2,880 man-hours saved, rate 65% \u2192 97%","GST POB & P2P: 98% of $351K recovered, TAT \u2193 57%","Founder-mandated 15-city C2B expansion in 5 months (32% penetration growth)","$0.9M savings; Ford/Nissan/OYO partnerships (+5% C2B conversion)","0\u21921 customer centres \u2014 4,820 vehicles, ~850 sales"]},{role:"Program Manager \u2013 Growth & Marketing",dates:"May 2025 \u2013 Present",bullets:["ASO framework 8 apps \u2014 32% install growth (533K \u2192 704K)","GMB reviews 1.3K \u2192 4.8K (~3.6x), impressions +78%, CVR +9%"]}]}
+};
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function getWeekKey(date){const d=new Date(date);const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);const mon=new Date(d.setDate(diff));return mon.toISOString().slice(0,10);}
+function weeksAgo(n){const d=new Date();d.setDate(d.getDate()-n*7);return getWeekKey(d);}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+const STOP=new Set("a an the and or but in on at to for of with by from as is are was were be been being have has had do does did will would could should may might shall can this that these those i you he she it we they all any each more most other into its if not no nor so yet both either neither than then when where how what which who their there through during before after above below between out about against".split(" "));
+function extractKW(text){
+  const words=text.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(w=>w.length>3&&!STOP.has(w));
+  const bigrams=[];for(let i=0;i<words.length-1;i++){if(!STOP.has(words[i])&&!STOP.has(words[i+1]))bigrams.push(words[i]+" "+words[i+1]);}
+  const freq={};[...words,...bigrams].forEach(w=>{freq[w]=(freq[w]||0)+1;});
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,60).map(e=>e[0]);
+}
+function scoreText(text,terms){return terms.reduce((s,t)=>s+(text.toLowerCase().includes(t)?1:0),0);}
+function buildResumeText(rid){const r=RESUME[rid];const role=ROLES_T.find(x=>x.id===rid);let t=`TARGET ROLE: ${role.label}\nHEADLINE: ${r.headline}\n\nSUMMARY:\n${r.summary}\n\nEXPERIENCE AT CARS24 (${CONTACT.cars24desc}):\n`;r.sections.forEach(s=>{t+=`\n${s.role} | ${s.dates}\n`;s.bullets.forEach(b=>t+=`• ${b}\n`);});t+=`\nEDUCATION: B.Tech Civil Engineering, IIT (BHU) Varanasi, 2015-2019`;return t;}
+
+// ── JD PREP GENERATOR (fully offline) ────────────────────────────────────────
+function detectCompanyType(jd){
+  const j=jd.toLowerCase();
+  if(/deloitte|ey\b|kpmg|accenture|mckinsey|bcg|pwc|consult/i.test(jd))return"consulting";
+  if(/gcc|global capability|captive|shared service|centre of excellence/i.test(jd))return"gcc";
+  if(/series [a-e]|seed stage|growth stage|startup|founded in 20|venture/i.test(jd))return"startup";
+  if(/bank|financial services|insurance|nbfc|fintech|wells fargo|hdfc|icici/i.test(jd))return"bfsi";
+  if(/pharma|healthcar|novartis|siemens|medical/i.test(jd))return"healthcare";
+  return"corporate";
+}
+
+function detectBestRole(jd){
+  const j=jd.toLowerCase();
+  const scores={
+    spm:scoreText(j,["program manager","program management","pmo","delivery","governance","budget","p&l","stakeholder","cross-functional","risk","milestone","portfolio"]),
+    bom:scoreText(j,["operations","business operations","process improvement","efficiency","standard operating","vendor","cost","0 to 1","scale operations","supply chain","workflow"]),
+    sgm:scoreText(j,["strategy","growth","market expansion","business development","revenue","bd","cxo","board","market entry","go-to-market","competitive","market share"]),
+    pom:scoreText(j,["product","aso","seo","crm","mau","dau","retention","funnel","conversion","automation","product analytics","feature","roadmap","a/b test"]),
+    cos:scoreText(j,["chief of staff","founder","decision","intelligence","ambiguous","mandate","special projects","office of","cross-functional coordination","strategic initiatives"]),
+  };
+  const best=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  return{id:best[0][0],scores};
+}
+
+function extractJDMeta(jdText){
+  const lines=jdText.split('\n').map(l=>l.trim()).filter(l=>l.length>2);
+  let company="This Company",roleTitle="This Role";
+  for(const l of lines.slice(0,6)){if(l.length>3&&l.length<60&&!/^(about|we are|we're|job|role|position|responsibilities|requirements|qualifications|overview)/i.test(l)){if(company==="This Company")company=l;else if(roleTitle==="This Role"){roleTitle=l;break;}}}
+  const rtLine=lines.find(l=>/manager|director|analyst|specialist|associate|head|lead|officer|executive|engineer/i.test(l)&&l.length<80);
+  if(rtLine)roleTitle=rtLine;
+  return{company,roleTitle};
+}
+
+function genIntro(company,roleTitle,companyType,bestRoleId){
+  const typeLines={
+    consulting:`${company} is exactly the environment where that kind of structured, client-facing problem solving matters — and I'm excited to bring that lens here.`,
+    gcc:`${company}'s India centre plays a critical strategic role, and I'm drawn to the scale and complexity of what gets built here.`,
+    startup:`${company} is at a stage where you need someone who builds systems from scratch and owns outcomes completely — that's precisely what I've been doing.`,
+    bfsi:`${company}'s scale and governance requirements are a natural fit for someone who's managed multi-million dollar budgets and built operational infrastructure.`,
+    healthcare:`${company} operates at the intersection of process rigour and impact — exactly the environment I'm looking to grow in.`,
+    corporate:`${company}'s size and complexity is the right next platform for the kind of senior-scope work I've been delivering.`,
+  };
+  return`SAY THIS (60 seconds — practise until it sounds natural, not recited):
+
+"I'm Gunadeep Sai — IIT BHU graduate with 6+ years at Cars24, India's largest used car platform at $1.84 billion valuation.
+
+Over those 6 years, my mandate kept expanding. I started in operations — ran a $10 million program, launched C2B operations across 15 cities in 5 months, and built Salesforce from scratch saving 2,880 man-hours annually. I then moved into the Founder's Office where I delivered board-level decision support — owned CXO reviews, surfaced metrics that triggered a homepage redesign, and grew a product feature's MAU by 72%. Most recently I've been running growth programs — ASO across 8 apps, GMB operations, and SEO — driving measurable acquisition impact.
+
+The common thread: I'm the person handed an ambiguous, high-stakes problem and asked to build structure around it. Every function I've worked in, I've been given more responsibility than my title suggested — because I delivered.
+
+${typeLines[companyType]||typeLines.corporate}
+
+That's my background. I'd love to understand more about the specific mandate for this ${roleTitle} role."
+
+WHAT TO AVOID:
+• Don't read this. Internalise it. 3 chunks: who I am → what I did (3 eras) → why this company.
+• Don't mention salary, current CTC, or "I'm looking for a change" in the intro.
+• Don't apologise for being at one company. Own it as deliberate depth.
+• Don't go over 90 seconds. Time yourself.`;
+}
+
+function genSTAR(jd,bestRoleId){
+  const j=jd.toLowerCase();
+  const allQs=[
+    {tags:["program","budget","governance","p&l","million","financial"],q:"Walk me through your most complex program.",a:`SITUATION: The 15-city C2B expansion at Cars24 — simultaneously a $10M program, a real estate ($9.7M portfolio), a Salesforce implementation, and a market launch across cities I'd never operated in.
+
+ACTION: I built the governance framework myself. Weekly cash flow tracker, milestone-linked expenditure, monthly CXO reviews. I split accountability into three tracks — financial (me), city operations (ops leads), product (engineering). I ran the Salesforce implementation without a vendor, sitting directly with engineering.
+
+RESULT: 32% market penetration growth in 5 months. 2,880 annual man-hours saved. 80% of identified financial risks mitigated. $7.3M in annual overhead transactions streamlined.
+
+WHAT TO AVOID: Don't say "I coordinated" or "I helped." Say "I owned" and "I built." Be specific about the dollar amounts — they make the scale credible.`,tip:"Lead with the biggest number ($10M). Interviewers remember anchors."},
+    {tags:["risk","mitigation","financial","exposure","governance"],q:"Tell me about a financial risk you identified and mitigated.",a:`SITUATION: During the expansion program, I identified a $351K defaulted amount exposure in our GST POB and P2P payment cycle. The root cause was manual approval cycles creating a 21-day TAT — by which point vendors had moved on and defaults accumulated.
+
+ACTION: Designed an automated Salesforce workflow that triggered approvals in sequence with time-bound escalations. Worked with engineering to build it in 3 weeks.
+
+RESULT: Recovered 98% of the $351K defaulted amount. TAT reduced from 21 to 8 days — 57% reduction. The system then prevented recurrence, not just resolved the backlog.
+
+WHAT TO AVOID: Don't be vague about the mechanism. Say "automated Salesforce workflow" not "streamlined the process."`,tip:"Quantify the risk in dollar terms AND show the structural fix, not just a one-time recovery."},
+    {tags:["stakeholder","cxo","executive","board","leadership","c-suite","reporting"],q:"How do you manage CXO-level stakeholders?",a:`SITUATION: In the Founder's Office role, I owned the Monthly Marketing Reviews presented to the C-suite, plus quarterly QOP and MD&A reviews.
+
+ACTION: My approach was always to lead with the one number that tells the story, then explain the 'why', then present decision options — not just information. In one review I identified we had no visibility into clicks per user or clicks per transaction. I surfaced this as a diagnostic gap, not just a data observation, and tied it to conversion implications.
+
+RESULT: That single insight triggered a full homepage redesign. Indian geography's leadership visibility increased from 6% to 9% over the review cycle. C-suite began requesting my review decks proactively.
+
+WHAT TO AVOID: Don't say "I presented data to leadership." Say "I changed what they decided."`,tip:"CXO stakeholder management is proved by showing a decision that changed because of you."},
+    {tags:["0 to 1","build","launch","scratch","greenfield","new"],q:"Tell me about something you built from scratch.",a:`SITUATION: The Salesforce CRM implementation — no vendor, no prior system, no playbook. The business had been running financial operations manually.
+
+ACTION: Mapped every workflow that needed to move to the system: lease management, financial operations, overhead transactions, GST POB, P2P payments. Worked directly with engineering over 6 weeks. Built the system in phases — core transactional flow first, then automations, then reporting.
+
+RESULT: Launched and saved 2,880 annual man-hours immediately. Transactional success rate went from 65% to 97% within one month of go-live.
+
+SEPARATE EXAMPLE — physical 0→1: Built customer experience centres across South India post-pandemic. No precedent. Catalogued 4,820 vehicles, enabled ~850 sales within 7 months.
+
+WHAT TO AVOID: Don't frame 0→1 as just "setting up." Show what the system produced after you left it running.`,tip:"Have two 0→1 stories ready — one systems/tech, one physical/operational."},
+    {tags:["data","analytics","insight","metrics","measurement","kpi","reporting"],q:"Tell me about a time data changed a business decision.",a:`SITUATION: In the Founder's Office, I was running Monthly Marketing Reviews and noticed our standard metrics (total impressions, total clicks) weren't telling us anything actionable.
+
+ACTION: I dug into the raw data and surfaced two metrics nobody was tracking: clicks per user and clicks per transaction. These revealed that while total clicks looked healthy, engagement per user was declining — meaning we were growing reach but losing depth.
+
+RESULT: This single insight triggered a complete homepage redesign. The product team shifted their entire experimentation roadmap based on this framing.
+
+SEPARATE EXAMPLE: Diagnosed a 48% drop-off in car valuation feature at the API response stage (not the UI layer). Realigned engineering priorities. MAU grew from 29K to 50K — 72% growth.
+
+WHAT TO AVOID: Don't just say "I used data to make decisions." Show the specific number, the insight it revealed, and the decision it changed.`,tip:"Two-example answers show range. Use the homepage redesign story first (strategic), then the MAU story (technical)."},
+    {tags:["growth","acquisition","marketing","conversion","user","retention","product"],q:"Walk me through a growth initiative you led.",a:`SITUATION: The Orbit product at Cars24 had low organic discovery — users who needed it weren't finding it.
+
+ACTION: Mapped 6 high-traffic surfaces across the app where Orbit could be embedded without disrupting the primary user flow. Designed the placement logic, worked with product and engineering on integration, tracked internal acquisition separately from paid channels.
+
+RESULT: 8.2K monthly users through internal channels — zero external spend. Separately, the ASO framework I built for 8 apps drove 32% install growth (533K → 704K) in 9 months. GMB operations I scaled added 3.6x review growth and 78% impressions increase.
+
+WHAT TO AVOID: Don't mix all growth achievements into one answer. Pick one initiative and tell the full story. Mention others as "separately."`,tip:"Growth interviewers want to see how you think about channels, not just results. Show the hypothesis behind the strategy."},
+    {tags:["team","people","leadership","manage","mentor","lead","conflict"],q:"How do you lead without formal authority?",a:`SITUATION: The Salesforce implementation required engineering to deprioritise their existing backlog — they had no reason to prioritise my project over others.
+
+ACTION: I didn't escalate. I sat with the engineering team, mapped their existing backlog, and reframed the implementation as reducing their own operational burden — which it genuinely did (2,880 hours saved annually was largely their hours too). I made their problem my problem first.
+
+RESULT: Full implementation in 6 weeks without a formal mandate. The team became advocates for the system post-launch.
+
+BROADER PATTERN: In the city expansion, I managed city ops leads who didn't report to me across 15 locations. My approach: clear accountability agreements upfront, weekly review cadence, and escalation-free problem solving — I absorbed their blockers before they became their failures.
+
+WHAT TO AVOID: Don't say "I built relationships." Show the specific mechanism you used to align people who had no incentive to follow you.`,tip:"Influence without authority is the #1 thing COS and senior ops roles probe. Have two examples with different mechanisms."},
+    {tags:["failure","mistake","challenge","difficult","setback","wrong"],q:"Tell me about a significant failure.",a:`SITUATION: In the initial 15-city expansion, my city selection model prioritised speed over local market readiness. Two cities underperformed significantly in month 2 — vehicle cataloguing was 40% below target.
+
+ACTION: I paused the remaining rollout, did a root cause analysis with the city ops leads, and rebuilt the selection model to weight local competition density and vendor availability as primary variables — not just vehicle density.
+
+RESULT: The revised approach delayed full rollout by 3 weeks but delivered 32% market penetration growth overall. The two underperforming cities improved to 80% of target within 45 days.
+
+LESSON: I now always run a 'pre-mortem' on any expansion plan — explicitly asking what would make this fail, before committing to timelines.
+
+WHAT TO AVOID: Never pick a trivial failure. Never say "I work too hard." Pick something real where you made a genuine mistake and show the learning.`,tip:"Interviewers respect candidates who own real failures with specific detail. Vague failures signal defensiveness."},
+  ];
+  // Score each question against JD
+  const scored=allQs.map(q=>({...q,score:scoreText(j,q.tags)})).sort((a,b)=>b.score-a.score);
+  return scored.slice(0,6);
+}
+
+function genGuesstimates(jd,companyType){
+  const j=jd.toLowerCase();
+  const qs=[];
+  // Always include one India market sizing
+  qs.push({q:"How many used cars are sold in India per month?",approach:`STRUCTURE:
+1. India population: 1.4B → households: ~350M → ~15% own a car = 52M car-owning households
+2. Average car replacement cycle: 8 years → 52M ÷ 8 = 6.5M cars replaced/year
+3. New vs used split: ~65% used in India → 4.2M used car transactions/year
+4. Monthly: 4.2M ÷ 12 = ~350K used cars per month
+
+ANSWER: ~300-400K per month. Cars24 processes a meaningful share of this.
+
+WHY THIS MATTERS FOR YOUR INTERVIEW: You've worked at Cars24 for 6 years. If you don't know this number, it looks bad. Know the market you came from.`,note:"You should actually know this from your work. Anchor your answer with Cars24 data if you have it."});
+
+  if(/product|growth|user|app|digital/i.test(jd)){
+    qs.push({q:"Estimate the number of monthly active users of a major Indian job portal (e.g. Naukri).",approach:`STRUCTURE:
+1. India workforce: ~500M. White-collar seekers actively looking: ~15M at any time
+2. Passive browsing (not actively seeking): 3x active seekers = ~45M potential users
+3. Naukri market share in job portals: ~40%
+4. Engagement: of 45M potential, 30% visit monthly = ~13M
+5. Rough estimate: 10-15M MAU
+
+SANITY CHECK: Naukri is publicly listed. Their reported numbers are ~75M registered users, ~15M monthly active. This is a reasonable estimate.
+
+INTERVIEWER WANTS: Structured decomposition, not the right number. Show your tree.`});
+  }
+  if(/operations|ops|supply|logistics|efficiency/i.test(jd)){
+    qs.push({q:"How would you estimate the cost of running a 100-person operations centre in Hyderabad for a year?",approach:`STRUCTURE:
+People costs (70% of total):
+• 100 people avg CTC ₹8L = ₹8Cr/year
+Infrastructure (20%):
+• Office space: 100 people × 75 sqft = 7,500 sqft × ₹80/sqft/month × 12 = ₹72L
+• IT/equipment: 100 × ₹1L = ₹1Cr
+• Utilities, admin: ₹30L
+Total infra: ~₹2Cr
+Other (training, attrition, HR): ~₹1Cr
+
+TOTAL: ~₹11Cr/year (~$1.3M)
+
+WHY THIS MATTERS: Ops interviewers want to see you think in cost structures, not just delivery metrics.`});
+  }
+  if(/consulting|strategy|market|revenue|business/i.test(jd)){
+    qs.push({q:"Estimate the revenue of the Indian management consulting market.",approach:`STRUCTURE:
+1. India has ~5,000 consulting firms (Big 4 + boutiques)
+2. Big 4 India revenue (public data): Deloitte ~₹8K Cr, EY ~₹6K Cr, KPMG ~₹4K Cr, PwC ~₹5K Cr = ₹23K Cr for Big 4
+3. Big 4 = ~40% of the market
+4. Total market: ₹23K Cr ÷ 0.4 = ~₹57K Cr (~$7B)
+5. Growing at 12-15% YOY
+
+ANSWER: ~$6-8B, growing double-digit.
+
+CONSULTING FIRM INTERVIEWS: They want to see you use public data as anchor points, then triangulate.`});
+  }
+  // Always add a "think out loud" guidance note
+  qs.push({q:"General guesstimate approach — what interviewers are actually evaluating",approach:`THEY ARE SCORING YOU ON:
+1. STRUCTURE — Do you build a clear tree before calculating?
+2. ASSUMPTIONS — Do you state them explicitly? ("I'm assuming India has X households")
+3. REASONABLENESS — Do your numbers pass a gut-check?
+4. RECOVERY — When they push back ("what if you're wrong?"), do you adjust cleanly?
+
+THE FORMULA:
+• State the approach first (30 seconds): "I'll estimate this by breaking it into [X] and [Y]"
+• Clarify if needed: "Should I focus on revenue or volume?"
+• Build top-down, state each assumption
+• Sanity check your final number
+• Invite pushback: "Does that directionally align with what you'd expect?"
+
+WHAT TO AVOID:
+• Starting to calculate immediately without structure
+• Getting flustered when pushed back
+• Saying "I'm not sure" without attempting a framework
+• Giving a range so wide it's useless ("between 1 and 100 million")`});
+  return qs.slice(0,4);
+}
+
+function genCulture(company,companyType){
+  const typeNotes={
+    consulting:`${company} will probe whether you can handle high ambiguity, client pressure, and fast-moving contexts. They also test intellectual humility — consulting culture values people who say "I don't know, but here's how I'd find out."`,
+    gcc:`${company} GCC will test whether you understand the GCC operating model — India teams often have execution ownership but limited strategic input. Show you're comfortable with that structure while making clear you can add strategic value.`,
+    startup:`${company} will probe culture fit hard — they hire for values alignment as much as skills. Know their mission, know their product, and have a specific view on why you want to build here vs a more established company.`,
+    bfsi:`${company} will value process rigour, compliance mindset, and structured problem solving. Show that you understand the cost of operational errors in a regulated environment.`,
+    healthcare:`${company} values attention to detail, regulatory awareness, and long-term thinking. Show patience with process and an understanding that speed ≠ recklessness here.`,
+    corporate:`Research ${company}'s stated values and recent news before the interview. Reference something specific — it signals genuine interest, not just job-seeking.`,
+  };
+  return{
+    typeNote:typeNotes[companyType]||typeNotes.corporate,
+    questions:[
+      {q:"Why this company specifically?",script:`SCRIPT: "Two reasons. First, [COMPANY-SPECIFIC REASON — find something real from their website, news, or the JD itself]. Second, I've deliberately looked for environments where someone with my background — broad scope, P&L ownership, 0→1 execution — can work at the level I've actually been operating at. That combination is rare, and I see it here."\n\nWHAT TO AVOID: "Great company, great culture" — every candidate says this. You must name one specific thing about this company that isn't true of 10 others.`,tip:"Spend 20 minutes on their website before the interview. Find one recent announcement, initiative, or challenge to reference."},
+      {q:"Describe your ideal work environment.",script:`SCRIPT: "I work best in environments where the problem isn't fully defined yet — where I'm brought in to structure the ambiguity, not just execute against a pre-existing playbook. I like working with smart people who push back on my thinking. And I work best when I can see the full outcome — not just my slice of a larger project. That's been true in every role I've thrived in at Cars24."\n\nWHAT TO AVOID: Don't describe the perfect employer. Describe the conditions under which YOU perform best. This is about self-awareness.`,tip:"This question is a culture-fit probe. Match your answer to signals from the JD — if they emphasise autonomy, lean into that."},
+      {q:"How do you handle disagreement with a manager or senior stakeholder?",script:`SCRIPT: "I separate the issue from the relationship. If I disagree, I'll say so once — clearly and with data — and then commit to the decision, whatever it is. I don't relitigate. In the Founders Office, I surfaced an analysis that contradicted the initial homepage redesign approach. My manager disagreed. I presented my case once with the engagement data, they made a call, I executed it fully. The relationship stays intact when you make your case cleanly and then move on."\n\nWHAT TO AVOID: Don't say "I always defer to my manager." Don't say "I always push until they agree." Show that you disagree and commit — that's the answer senior interviewers want.`,tip:"'Disagree and commit' is the phrase that lands at senior level. Use it explicitly if it feels natural."},
+      {q:"What's your biggest weakness?",script:`SCRIPT: "I have high standards for the work, and I've historically struggled to delegate tasks I know I could do faster myself. I've been working on this consciously — in the 15-city expansion, I forced myself to let city ops leads own their metrics even when I could see gaps I could fix. The constraint of not being in all 15 cities at once helped me build that muscle. I'm a better delegator now, though it's still something I monitor."\n\nWHAT TO AVOID: Fake weaknesses ("I work too hard," "I'm a perfectionist"). They know, and it wastes their time. Pick something real with a real mitigation. The above is real for your profile.`,tip:"The best weakness answers show genuine self-awareness AND evidence you're working on it. Not just the problem, and not just the fix."},
+    ]
+  };
+}
+
+function genSalary(companyType){
+  const ranges={consulting:"25–35L",gcc:"22–30L",startup:"20–30L + equity",bfsi:"22–30L",healthcare:"20–28L",corporate:"22–28L"};
+  const range=ranges[companyType]||"22–28L";
+  return`SALARY NEGOTIATION — EXACT SCRIPT
+
+WHEN THEY ASK "What's your current CTC?":
+→ "I'd prefer to share that in context of the role's scope. What I can tell you is that for a Senior-level role with the ownership described in this JD, I'm targeting ${range}. Is that in the range you're working with?"
+
+IF THEY PUSH FOR CURRENT CTC:
+→ "Currently I'm in a band that reflects an IC title for what is genuinely senior-scope work — including P&L ownership and $10M program governance. The gap between my title and my contribution is part of why I'm making this move. I'm benchmarking on market rates for the level of impact, not my current number."
+
+WHEN THEY GIVE YOU AN OFFER:
+→ NEVER accept on the spot. Say: "Thank you — I appreciate the offer. Can I have 48 hours to review the full package?"
+→ When you return: "I'm very excited about this role. The offer is strong, and I'd like to make this work. Based on my scope of experience and current market benchmarks, is there flexibility to move toward [TOP OF THEIR RANGE]? I want to start this the right way."
+
+WHAT TO NEVER SAY:
+• "I'm flexible" (before they give a number)
+• "My current CTC is X" as your opening (it anchors them low)
+• "I need at least X" (sounds desperate)
+• "Other companies are offering X" (unless it's true and you're willing to walk)
+
+TARGET RANGE FOR YOUR PROFILE: ${range}
+If they say that's too high: "I understand. What the role requires is someone who's governed $10M programs, driven measurable business outcomes, and delivered CXO-level work as an IC. I'm confident that's the right benchmark. Is there room to revisit the band?"`;
+}
+
+function genReverse(company,roleTitle,companyType){
+  const typeQs={
+    consulting:["What does a typical engagement look like for someone in this role — what's the client industry mix?","How does the India practice contribute to global firm strategy vs operate independently?","What does the career path look like from this level — is there a clear path to principal or partner?"],
+    gcc:["How does the India centre's mandate interact with the global team — is strategy set here or handed down?","What's the balance between operational execution and strategic contribution for this role?","How has the India centre's remit evolved over the last 3 years?"],
+    startup:["What does success look like for this role in the first 90 days?","How does the founding team stay involved in decisions at this level?","What's the current biggest operational constraint you're solving for?"],
+    bfsi:["How does this role interact with the regulatory and compliance functions?","What does the career progression look like for high performers in this team?","What's the biggest operational challenge the team is working through right now?"],
+    corporate:["What does the first 90 days look like — is there a structured onboarding or is it more learn-by-doing?","How does this team measure success, and how often are those metrics reviewed?","What's the biggest unsolved challenge in this function right now?"],
+  };
+  const specific=typeQs[companyType]||typeQs.corporate;
+  return[
+    ...specific,
+    `What does the person who's previously done this ${roleTitle} role well look like — what qualities did they have that made them successful here?`,
+    "What are the main reasons people struggle in this role or leave within the first year?",
+    "How would you describe the culture of the immediate team I'd be joining?",
+    "What does the growth trajectory look like for someone who delivers strongly in this role?",
+  ].map((q,i)=>({q,note:i<3?"Company-specific — ask this one":"Universal — always relevant"}));
+}
+
+function genRedFlags(bestRoleId,companyType){
+  const roleFlags={
+    spm:["Don't call yourself an 'individual contributor' — you operated at senior scope. Own it.","Don't undersell the financial numbers. If asked about your budget, say '$10M program' confidently.","Don't frame the 7-year tenure defensively. It's not a red flag if you own it as expanding scope."],
+    bom:["Don't use project management language ('coordinated,' 'tracked,' 'supported'). Use ownership language ('built,' 'governed,' 'owned').","Don't forget to mention post-launch ownership — BOM roles need sustained accountability, not just launches."],
+    sgm:["Don't jump to solutions before showing your diagnostic framework. Consultants test this hard.","Don't quote market data you're not sure of. It's better to say 'I'd verify this' than to be wrong."],
+    pom:["Don't speak only in vanity metrics (impressions, downloads). Always tie to business outcomes.","Don't show if you can't code — they'll ask. Be clear about your technical vs strategic interface."],
+    cos:["Don't show too much ambition for the wrong things. CoS roles reward people who make the principal successful, not themselves.","Don't be vague about ambiguity. CoS interviews specifically probe this — have 3 concrete examples of structuring ambiguous mandates."],
+  };
+  const universal=[
+    "Never mention current CTC in the first two rounds. It anchors every conversation downward.",
+    "Never badmouth Cars24 or current management — even gently. It signals poor judgment.",
+    "Don't say 'I' too much in cross-functional stories. Interviewers dock points for solo credit when team collaboration was involved.",
+    "Don't be unprepared for 'why are you leaving after 7 years?' — have the positive framing ready.",
+    companyType==="consulting"?"Don't pretend you know consulting if you don't. They'll find out. Own that you're bringing an operator's lens, which is different and valuable.":companyType==="startup"?"Don't oversell stability-seeking. Startups want people excited to build, not looking for a safe harbour after Cars24.":"Don't confuse 'busy' with 'impactful.' Every answer should end with the measurable outcome, not the volume of activity.",
+  ];
+  return[...(roleFlags[bestRoleId]||[]),...universal];
+}
+
+function gen30_60_90(roleTitle,bestRoleId){
+  const plans={
+    spm:{d30:"Map the program portfolio. Meet every key stakeholder. Understand the current governance framework's gaps. Deliver one quick win — a reporting improvement or a risk you caught.",d60:"Own your first major program review. Present a gap analysis of current vs ideal governance. Begin building relationships with the functions you depend on but don't control.",d90:"Have a full portfolio view with prioritised risk register. Propose one structural improvement to the program management process. Be the person stakeholders come to before escalating."},
+    bom:{d30:"Map every operational process end-to-end. Identify the 3 biggest efficiency gaps. Talk to the people doing the work, not just managers. Understand the cost structure.",d60:"Own one process improvement end-to-end. Build or improve the primary operations dashboard. Establish your cadence with key vendors or partners.",d90:"Present a roadmap for the function's next 6 months. Have reduced one measurable cost or improved one measurable efficiency. Be seen as the operational owner, not a new hire."},
+    sgm:{d30:"Read everything — strategy docs, board decks, market reports, competitor analysis. Map the decision-making structure. Identify which strategic questions are unresolved.",d60:"Bring one external insight that changes how the team sees a problem. Lead or co-lead one strategic workstream. Build your credibility with the analytical rigor of your output.",d90:"Own a strategic recommendation from problem to presentation. Have an opinion on the company's biggest strategic bet and be able to defend it."},
+    pom:{d30:"Understand the full product funnel with data. Identify the biggest drop-off points. Map what's being measured vs what matters.",d60:"Launch or improve one growth experiment. Own one operational metric end-to-end. Build the reporting layer if it doesn't exist.",d90:"Have driven a measurable improvement in at least one key product metric. Be the go-to person for product-operations questions. Have a 6-month growth hypothesis on the table."},
+    cos:{d30:"Earn trust by over-delivering on every task, no matter how small. Understand the principal's top 3 priorities. Map the political landscape — who has influence, who doesn't, and where friction exists.",d60:"Proactively surface something the principal didn't know they needed to know. Own one cross-functional initiative end-to-end. Start showing up in rooms you weren't explicitly invited to.",d90:"Be the person the principal relies on before making decisions. Have built a reputation across functions as someone who gets things done and doesn't create drama. Have one meaningful strategic contribution to your name."},
+  };
+  const p=plans[bestRoleId]||plans.spm;
+  return`30-60-90 DAY PLAN FOR ${roleTitle.toUpperCase()}
+
+FIRST 30 DAYS — Listen, map, identify:
+${p.d30}
+
+Say in interview: "In the first 30 days I'd focus entirely on understanding before acting — mapping the stakeholders, the current processes, and where the biggest gaps are. I wouldn't try to fix anything yet."
+
+DAYS 31-60 — Contribute, build credibility:
+${p.d60}
+
+Say in interview: "By day 60 I'd want to have delivered one tangible contribution — not a presentation about what I'll do, but something that actually improved a number or solved a problem."
+
+DAYS 61-90 — Own, lead, set direction:
+${p.d90}
+
+Say in interview: "By 90 days I'd want to be seen as someone who's already operating at the level the role requires — not still learning, but already delivering."
+
+WHAT TO AVOID:
+• Don't say "I'll spend the first 30 days learning" without specifics. Tell them HOW you'll learn (stakeholder interviews, data audits, process mapping).
+• Don't promise deliverables you can't guarantee — "increase revenue by X" in 90 days is reckless. Say "identify the lever, build the hypothesis, begin execution."
+• Don't forget to ask: "Does this align with what you'd expect from someone in this role?"`;
+}
+
+function generateJDPrep(jdText){
+  const{company,roleTitle}=extractJDMeta(jdText);
+  const companyType=detectCompanyType(jdText);
+  const{id:bestRoleId,scores}=detectBestRole(jdText);
+  const bestRoleLabel=ROLES_T.find(r=>r.id===bestRoleId)?.label||"Senior Program Manager";
+  const keywords=extractKW(jdText).slice(0,15);
+  return{
+    company,roleTitle,companyType,bestRoleId,bestRoleLabel,keywords,scores,
+    intro:genIntro(company,roleTitle,companyType,bestRoleId),
+    star:genSTAR(jdText,bestRoleId),
+    guesstimates:genGuesstimates(jdText,companyType),
+    culture:genCulture(company,companyType),
+    salary:genSalary(companyType),
+    reverse:genReverse(company,roleTitle,companyType),
+    redflags:genRedFlags(bestRoleId,companyType),
+    plan:gen30_60_90(roleTitle,bestRoleId),
+  };
+}
+
+// ── MAIN APP ─────────────────────────────────────────────────────────────────
+function App(){
+  const [tab,setTab]=useState("dashboard");
+  const [apps,setApps]=useState([]);
+  const [loaded,setLoaded]=useState(false);
+  const [scriptUrl,setScriptUrl]=useState("");
+  const [syncStatus,setSyncStatus]=useState("local");
+  const [showSettings,setShowSettings]=useState(false);
+  const [tempUrl,setTempUrl]=useState("");
+  // tracker
+  const [form,setForm]=useState({id:"",date:todayStr(),company:"",role:ROLES_T[0].label,portal:PORTALS[0],stage:"Applied",notes:"",isReferral:false,ctc:"",jdUrl:""});
+  const [editId,setEditId]=useState(null);
+  const [filters,setFilters]=useState({role:"All",portal:"All",stage:"All"});
+  const [toast,setToast]=useState("");
+  const [dials,setDials]=useState({dmsToday:0,referralsGen:0,casesPrepped:0});
+  // interview
+  const [iRole,setIRole]=useState("common");
+  const [openQ,setOpenQ]=useState(null);
+  // jd prep
+  const [jdPrepText,setJdPrepText]=useState("");
+  const [jdPrepResult,setJdPrepResult]=useState(null);
+  const [prepCat,setPrepCat]=useState("intro");
+  const [openPrepQ,setOpenPrepQ]=useState(null);
+  // tailor
+  const [tRoleId,setTRoleId]=useState("spm");
+  const [jdTailorText,setJdTailorText]=useState("");
+  const [tResult,setTResult]=useState(null);
+  const [tStep,setTStep]=useState("input");
+  const [tTab,setTTab]=useState("overview");
+  const [downloading,setDownloading]=useState(false);
+  const [docxUrl,setDocxUrl]=useState(null);
+
+  // load
+  useEffect(()=>{
+    const init=async()=>{
+      try{const s=localStorage.getItem(SKEY);if(s){const d=JSON.parse(s);if(d.apps)setApps(d.apps);if(d.dials)setDials(d.dials);}}catch(e){}
+      try{const u=localStorage.getItem("gunadeep_script_url");if(u){setScriptUrl(u);setTempUrl(u);}}catch(e){}
+      setLoaded(true);
+    };
+    init();
+  },[]);
+
+  useEffect(()=>{if(scriptUrl&&loaded)syncFromSheets();},[scriptUrl,loaded]);
+
+  // Google Sheets sync
+  const syncFromSheets=async()=>{
+    if(!scriptUrl)return;
+    setSyncStatus("syncing");
+    try{
+      const r=await fetch(scriptUrl+"?ts="+Date.now());
+      const d=await r.json();
+      if(d.apps)setApps(d.apps);
+      if(d.dials)setDials(d.dials);
+      setSyncStatus("synced");
+    }catch(e){setSyncStatus("error");}
+  };
+
+  const persist=useCallback((newApps,newDials)=>{
+    try{localStorage.setItem(SKEY,JSON.stringify({apps:newApps,dials:newDials}));}catch(e){}
+    if(scriptUrl){
+      setSyncStatus("syncing");
+      fetch(scriptUrl,{method:"POST",body:JSON.stringify({apps:newApps,dials:newDials})})
+        .then(()=>setSyncStatus("synced"))
+        .catch(()=>setSyncStatus("error"));
+    }
+  },[scriptUrl]);
+
+  const saveScriptUrl=(u)=>{
+    const trimmed=u.trim();
+    setScriptUrl(trimmed);
+    setTempUrl(trimmed);
+    try{localStorage.setItem("gunadeep_script_url",trimmed);}catch(e){}
+  };
+
+  const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2400);};
+
+  // metrics
+  const thisWeek=getWeekKey(new Date());
+  const wkApps=(wk)=>apps.filter(a=>getWeekKey(a.date)===wk);
+  const twApps=wkApps(thisWeek);
+  const totalApps=apps.length;
+  const totalResp=apps.filter(a=>!["Applied","No Response"].includes(a.stage)).length;
+  const totalIntvw=apps.filter(a=>["Interview R1","Interview R2","Final Round","Offer"].includes(a.stage)).length;
+  const totalOffers=apps.filter(a=>a.stage==="Offer").length;
+  const totalRef=apps.filter(a=>a.isReferral).length;
+  const twCount=twApps.length;
+  const twRef=twApps.filter(a=>a.isReferral).length;
+  const respRate=totalApps?Math.round((totalResp/totalApps)*100):0;
+  const intvwRate=totalApps?Math.round((totalIntvw/totalApps)*100):0;
+  const ghostRate=totalApps?Math.round((apps.filter(a=>a.stage==="No Response").length/totalApps)*100):0;
+  const byPortal=PORTALS.map(p=>({name:p,count:apps.filter(a=>a.portal===p).length})).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+  const byStage=STAGES.map(s=>({name:s,count:apps.filter(a=>a.stage===s).length})).filter(x=>x.count>0);
+  const weekTrend=Array.from({length:6},(_,i)=>{const wk=weeksAgo(5-i);return{week:wk.slice(5),count:wkApps(wk).length};});
+
+  // tracker actions
+  const resetForm=()=>setForm({id:Date.now().toString(),date:todayStr(),company:"",role:ROLES_T[0].label,portal:PORTALS[0],stage:"Applied",notes:"",isReferral:false,ctc:"",jdUrl:""});
+  const submitApp=()=>{
+    if(!form.company.trim()){showToast("Enter company name");return;}
+    let updated;
+    if(editId){updated=apps.map(a=>a.id===editId?{...form,id:editId}:a);setEditId(null);}
+    else{updated=[{...form,id:Date.now().toString()},...apps];}
+    setApps(updated);persist(updated,dials);resetForm();setTab("applications");showToast(editId?"Updated!":"Logged!");
+  };
+  const deleteApp=(id)=>{const u=apps.filter(a=>a.id!==id);setApps(u);persist(u,dials);showToast("Deleted");};
+  const updateStage=(id,stage)=>{const u=apps.map(a=>a.id===id?{...a,stage}:a);setApps(u);persist(u,dials);};
+  const startEdit=(app)=>{setForm({...app});setEditId(app.id);setTab("add");};
+  const updateDials=(key,val)=>{const nd={...dials,[key]:Number(val)};setDials(nd);persist(apps,nd);};
+
+  // tailor (offline)
+  const tRole=ROLES_T.find(r=>r.id===tRoleId);
+  const HIGH_VALUE=["program management","project management","stakeholder management","p&l","budget","operations","business operations","strategy","growth","product management","cross-functional","salesforce","crm","kpi","okr","process improvement","automation","data analysis","revenue","market expansion","0 to 1","governance","vendor management","risk management","agile","pmp","roadmap","analytics","reporting","dashboard","expansion","launch","scale","efficiency","delivery","implementation"];
+  const runTailorOffline=()=>{
+    if(!jdTailorText.trim()){showToast("Paste the JD first");return;}
+    const jd=jdTailorText;
+    const{company,roleTitle}=extractJDMeta(jd);
+    const{id:bestId,scores}=detectBestRole(jd);
+    const jdKW=extractKW(jd);
+    const matched=HIGH_VALUE.filter(kw=>jd.toLowerCase().includes(kw));
+    const atsKeywords=[...new Set([...matched.slice(0,6),...jdKW.filter(k=>k.length>4).slice(0,10)])].slice(0,12);
+    const resume=RESUME[tRoleId];
+    const scoredSecs=resume.sections.map(sec=>{
+      const sb=sec.bullets.map(b=>({original:b,score:scoreText(b.toLowerCase(),jdKW)})).sort((a,b2)=>b2.score-a.score);
+      return{...sec,scoredBullets:sb,avg:sb.reduce((a,b2)=>a+b2.score,0)/(sb.length||1)};
+    }).sort((a,b)=>b.avg-a.avg);
+    const allResumeText=resume.sections.map(s=>s.bullets.join(" ")).join(" ").toLowerCase();
+    const missing=atsKeywords.filter(k=>!allResumeText.includes(k.toLowerCase())).slice(0,6);
+    const matchCount=atsKeywords.filter(k=>allResumeText.includes(k.toLowerCase())).length;
+    const match_score=Math.min(92,Math.max(35,Math.round((matchCount/Math.max(atsKeywords.length,1))*100)));
+    const resultSections=scoredSecs.map(sec=>{
+      const origOrder=sec.bullets;
+      const newOrder=sec.scoredBullets.map(b=>b.original);
+      return{role:sec.role,dates:sec.dates,bullets:newOrder.map((b,i)=>({original:b,tailored:b,changed:newOrder[i]!==origOrder[i],reason:"Higher JD keyword match"}))}; 
+    });
+    // also score all 5 role versions to recommend
+    const roleRecs=ROLES_T.map(r=>{
+      const rt=RESUME[r.id].sections.map(s=>s.bullets.join(" ")).join(" ").toLowerCase();
+      const sc=atsKeywords.filter(k=>rt.includes(k)).length;
+      return{...r,matchPct:Math.round((sc/Math.max(atsKeywords.length,1))*100)};
+    }).sort((a,b)=>b.matchPct-a.matchPct);
+    setTResult({company_name:company,role_title:roleTitle,match_score,ats_keywords:atsKeywords,missing_keywords:missing,headline:resume.headline,summary:resume.summary,top_tip:`Strongest bullets moved to top of each section. Weave in missing keywords: ${missing.slice(0,3).join(", ")}.`,sections:resultSections,roleRecs});
+    setTStep("result");setTTab("overview");setDocxUrl(null);
+  };
+
+  // docx download with mobile fallback
+  const downloadDocx=async()=>{
+    if(!window.docx||!tResult||downloading)return;
+    setDownloading(true);setDocxUrl(null);
+    try{
+      const{Document,Packer,Paragraph,TextRun,AlignmentType,BorderStyle,LevelFormat}=window.docx;
+      const COL=tRole.color.replace("#",""),DARK="1A1A1A",GRAY="555555",LGRAY="999999";
+      const sl=()=>new Paragraph({border:{bottom:{style:BorderStyle.SINGLE,size:8,color:COL,space:1}},spacing:{before:0,after:60},children:[]});
+      const sh=t=>new Paragraph({spacing:{before:160,after:20},children:[new TextRun({text:t.toUpperCase(),bold:true,size:18,color:COL,font:"Arial",characterSpacing:40})]});
+      const rh=(t,d)=>new Paragraph({spacing:{before:110,after:16},border:{left:{style:BorderStyle.SINGLE,size:10,color:COL,space:5}},indent:{left:100},children:[new TextRun({text:t,bold:true,size:18,font:"Arial",color:DARK}),new TextRun({text:"   "+d,size:16,font:"Arial",color:LGRAY})]});
+      const bl=t=>new Paragraph({numbering:{reference:"b",level:0},spacing:{before:16,after:16},children:[new TextRun({text:t,size:17,font:"Arial",color:DARK})]});
+      const ch=[];
+      ch.push(new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:20},children:[new TextRun({text:CONTACT.name,bold:true,size:48,font:"Arial",color:DARK})]}));
+      ch.push(new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:14},children:[new TextRun({text:CONTACT.iit,bold:true,size:18,font:"Arial",color:COL})]}));
+      ch.push(new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:16},children:[new TextRun({text:`${CONTACT.phone}  |  ${CONTACT.email}  |  ${CONTACT.linkedin}  |  ${CONTACT.location}`,size:15,font:"Arial",color:GRAY})]}));
+      ch.push(new Paragraph({alignment:AlignmentType.CENTER,spacing:{before:0,after:20},children:[new TextRun({text:tResult.headline,bold:true,size:19,font:"Arial",color:COL})]}));
+      ch.push(sl());ch.push(sh("Professional Summary"));ch.push(sl());
+      ch.push(new Paragraph({spacing:{before:30,after:30},children:[new TextRun({text:tResult.summary,size:17,font:"Arial",color:DARK})]}));
+      ch.push(sh("Professional Experience"));ch.push(sl());
+      ch.push(new Paragraph({spacing:{before:100,after:0},children:[new TextRun({text:"Cars24",bold:true,size:20,font:"Arial",color:DARK}),new TextRun({text:`  —  ${CONTACT.cars24desc}`,size:15,font:"Arial",color:LGRAY,italics:true})]}));
+      ch.push(new Paragraph({spacing:{before:0,after:30},children:[new TextRun({text:CONTACT.scope,size:15,font:"Arial",color:GRAY,bold:true})]}));
+      const secs=tResult.sections&&tResult.sections.length>0?tResult.sections:RESUME[tRoleId].sections;
+      secs.forEach(sec=>{ch.push(rh(sec.role,sec.dates||""));(sec.bullets||[]).forEach(b=>{const txt=typeof b==="string"?b:(b.changed?b.tailored:b.original);ch.push(bl(txt));});});
+      ch.push(sh("Education"));ch.push(sl());
+      ch.push(new Paragraph({spacing:{before:30,after:20},children:[new TextRun({text:"B.Tech, Civil Engineering  —  IIT (BHU) Varanasi  |  2015–2019",bold:true,size:17,font:"Arial",color:DARK}),new TextRun({text:"   Startup Weekend Varanasi (Google)  —  54hrs, 120+ participants",size:15,font:"Arial",color:GRAY,italics:true})]}));
+      ch.push(sh("Core Skills & Keywords"));ch.push(sl());
+      ch.push(new Paragraph({spacing:{before:20,after:20},children:[new TextRun({text:(tResult.ats_keywords||[]).join("   •   "),size:16,font:"Arial",color:GRAY})]}));
+      const doc=new Document({numbering:{config:[{reference:"b",levels:[{level:0,format:LevelFormat.BULLET,text:"•",alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:320,hanging:200}}}}]}]},styles:{default:{document:{run:{font:"Arial",size:17,color:DARK}}}},sections:[{properties:{page:{size:{width:12240,height:15840},margin:{top:720,right:900,bottom:720,left:900}}},children:ch}]});
+      const buf=await Packer.toBuffer(doc);
+      const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+      const url=URL.createObjectURL(blob);
+      const fname=`Gunadeep_${(tResult.company_name||"Company").replace(/\s+/g,"_")}_${tRole.label.split(" ").slice(0,2).join("")}.docx`;
+      const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+      if(isMobile){
+        setDocxUrl({url,fname});
+      }else{
+        const a=document.createElement("a");a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+      }
+    }catch(e){alert("Error generating document: "+e.message);}
+    setDownloading(false);
+  };
+
+  if(!loaded)return<div style={{padding:"3rem",textAlign:"center",color:"#888"}}>Loading…</div>;
+
+  // style tokens
+  const card={border:"0.5px solid #e0deda",borderRadius:"12px",padding:"1rem 1.25rem",background:"#fff",marginBottom:"10px"};
+  const secLbl={fontSize:"11px",fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:"#aaa",margin:"1.25rem 0 8px"};
+  const inp={fontSize:"13px",padding:"7px 10px",borderRadius:"8px",border:"0.5px solid #d3d1c7",background:"#fff",width:"100%",color:"#1a1a1a",outline:"none"};
+  const pBar=(pct,color,h=6)=><div style={{background:"#f0f0ea",borderRadius:"3px",height:h,overflow:"hidden",marginTop:"6px"}}><div style={{width:pct+"%",height:"100%",background:color,borderRadius:"3px",transition:"width .4s"}}/></div>;
+  const pill=(stage)=>({display:"inline-block",fontSize:"10px",padding:"2px 9px",borderRadius:"999px",background:SC[stage]||"#eee",color:ST[stage]||"#333",fontWeight:500,whiteSpace:"nowrap"});
+  const btnP=(c)=>({fontSize:"12px",padding:"8px 18px",borderRadius:"8px",border:"none",background:c||"#1a1a1a",color:"#fff",fontWeight:600,cursor:"pointer"});
+  const btnO={fontSize:"12px",padding:"7px 14px",borderRadius:"8px",border:"0.5px solid #d3d1c7",background:"transparent",color:"#1a1a1a",cursor:"pointer"};
+  const barRow=(label,val,total,color)=>{const pct=total?Math.min(100,Math.round((val/total)*100)):0;return<div style={{marginBottom:"7px"}}><div style={{display:"flex",alignItems:"center",gap:"8px"}}><span style={{fontSize:"11px",color:"#666",width:"130px",flexShrink:0}}>{label}</span><div style={{flex:1,height:"5px",background:"#f0f0ea",borderRadius:"3px",overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:color,borderRadius:"3px"}}/></div><span style={{fontSize:"11px",color:"#888",width:"24px",textAlign:"right"}}>{val}</span></div></div>;};
+
+  const PREP_CATS=[["intro","Intro Pitch"],["star","STAR Work Questions"],["guesstimates","Guesstimates"],["culture","Culture & Values"],["salary","Salary Script"],["reverse","Reverse Questions"],["redflags","Red Flags"],["plan","30-60-90 Plan"]];
+  const TABS=[["dashboard","Dashboard"],["applications","Applications"+(apps.length?` (${apps.length})`:"")],["jdprep","JD Interview Prep"],["tailor","Resume Tailor"],["benchmarks","Benchmarks"],["add","+ Log App"]];
+
+  // ── DASHBOARD ──────────────────────────────────────────────────────────────
+  const Dashboard=()=>(
+    <div className="fade">
+      <div style={secLbl}>This week's targets</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"1.25rem"}}>
+        {[{label:"Applications",val:twCount,target:W_TARGET,color:"#EF9F27"},{label:"Referral outreach",val:twRef,target:R_TARGET,color:"#378ADD"}].map(b=>{
+          const pct=Math.min(100,Math.round((b.val/b.target)*100));
+          return<div key={b.label} style={{...card,marginBottom:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}><span style={{fontSize:"13px",fontWeight:600}}>{b.label}</span><span style={{fontSize:"13px",fontWeight:600,color:pct>=100?"#1D9E75":b.color}}>{b.val}/{b.target}</span></div>
+            {pBar(pct,pct>=100?"#1D9E75":b.color)}
+            <div style={{fontSize:"11px",color:"#aaa",marginTop:"3px"}}>{pct>=100?"Target hit! ✓":`${b.target-b.val} more to hit target`}</div>
+          </div>;
+        })}
+      </div>
+      <div style={secLbl}>Funnel tracker — update daily</div>
+      <div style={card}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px",marginBottom:"12px"}}>
+          {[{key:"dmsToday",label:"DMs / outreach sent",stage:"Top",color:"#534AB7",help:"Target 5/day"},{key:"referralsGen",label:"Referrals generated",stage:"Middle",color:"#0F6E56",help:"From outreach"},{key:"casesPrepped",label:"Interview cases prepped",stage:"Bottom",color:"#993C1D",help:"Before every R1"}].map(d=>(
+            <div key={d.key} style={{textAlign:"center"}}>
+              <div style={{fontSize:"10px",fontWeight:700,color:d.color,marginBottom:"4px",textTransform:"uppercase"}}>{d.stage}</div>
+              <input type="number" min="0" value={dials[d.key]} onChange={e=>updateDials(d.key,e.target.value)} style={{...inp,textAlign:"center",fontSize:"20px",fontWeight:700,padding:"6px",width:"64px",margin:"0 auto"}}/>
+              <div style={{fontSize:"11px",color:"#888",marginTop:"3px"}}>{d.label}</div>
+              <div style={{fontSize:"10px",color:"#bbb"}}>{d.help}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
+          {[{l:"If low DM replies",f:"Message too long or generic. Shorten + name the role.",c:"#FAEEDA",t:"#633806"},{l:"If low phone screens",f:"Resume not translating impact. Use Resume Tailor tab.",c:"#FCEBEB",t:"#A32D2D"},{l:"If failing interviews",f:"Pause applying. Use JD Interview Prep tab. Prep out loud.",c:"#EEEDFE",t:"#3C3489"}].map((h,i)=>(
+            <div key={i} style={{background:h.c,borderRadius:"8px",padding:"8px 10px"}}>
+              <div style={{fontSize:"10px",fontWeight:700,color:h.t,marginBottom:"3px"}}>{h.l}</div>
+              <div style={{fontSize:"11px",color:h.t,opacity:.8,lineHeight:"1.4"}}>{h.f}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={secLbl}>Pipeline overview</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"8px",marginBottom:"1.25rem"}}>
+        {[{n:totalApps,l:"Applied",c:"#1a1a1a"},{n:respRate+"%",l:"Response rate",c:"#378ADD"},{n:intvwRate+"%",l:"Interview rate",c:"#1D9E75"},{n:totalOffers,l:"Offers",c:"#993C1D"}].map((m,i)=>(
+          <div key={i} style={{background:"#f5f5f0",borderRadius:"8px",padding:"12px",textAlign:"center"}}>
+            <div style={{fontSize:"24px",fontWeight:700,color:m.c}}>{m.n}</div>
+            <div style={{fontSize:"11px",color:"#888",marginTop:"2px"}}>{m.l}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{...card,background:"#f9f7ff",border:"0.5px solid #c8c2f0",marginBottom:"1rem"}}>
+        <div style={{fontSize:"12px",fontWeight:600,color:"#534AB7",marginBottom:"8px"}}>Mindset metrics</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"12px"}}>
+          {[{l:"Ghosting Buffer",n:ghostRate+"%",d:"No-response rate. Up to 60% is normal.",c:"#1D9E75"},{l:"Rejection as Data",n:apps.filter(a=>a.stage==="Rejected").length,d:"Each No = a failed A/B test. Find the stage.",c:"#534AB7"},{l:"Velocity > Volume",n:totalRef,d:"Referral apps. 3 targeted beats 30 easy-apply.",c:"#993C1D"}].map((m,i)=>(
+            <div key={i}><div style={{fontSize:"11px",color:"#666",marginBottom:"2px",fontWeight:500}}>{m.l}</div><div style={{fontSize:"20px",fontWeight:700,color:m.c}}>{m.n}</div><div style={{fontSize:"10px",color:"#888",lineHeight:"1.4"}}>{m.d}</div></div>
+          ))}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"1rem"}}>
+        <div style={{...card,marginBottom:0}}><div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px"}}>By portal</div>{byPortal.length===0?<div style={{fontSize:"12px",color:"#bbb"}}>No data yet</div>:byPortal.map(p=>barRow(p.name,p.count,totalApps,"#378ADD"))}</div>
+        <div style={{...card,marginBottom:0}}><div style={{fontSize:"12px",fontWeight:600,marginBottom:"10px"}}>By stage</div>{byStage.length===0?<div style={{fontSize:"12px",color:"#bbb"}}>No data yet</div>:byStage.map(s=>barRow(s.name,s.count,totalApps,ST[s.name]||"#888"))}</div>
+      </div>
+      <div style={secLbl}>6-week trend</div>
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"flex-end",gap:"8px",height:"68px"}}>
+          {weekTrend.map((w,i)=>{const h=w.count===0?4:Math.max(8,Math.round((w.count/W_TARGET)*60));const isThis=i===5;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"4px"}}><span style={{fontSize:"10px",color:"#888"}}>{w.count||""}</span><div style={{width:"100%",height:h+"px",background:isThis?"#378ADD":w.count>=W_TARGET?"#1D9E75":"#d3d1c7",borderRadius:"3px 3px 0 0"}}/><span style={{fontSize:"9px",color:"#bbb",whiteSpace:"nowrap"}}>{isThis?"now":w.week}</span></div>;})}
+        </div>
+        <div style={{fontSize:"10px",color:"#bbb",marginTop:"6px"}}>Blue=this week  Green=hit target ({W_TARGET}/week)</div>
+      </div>
+    </div>
+  );
+
+  // ── APPLICATIONS ───────────────────────────────────────────────────────────
+  const Applications=()=>{
+    const filtered=apps.filter(a=>(filters.role==="All"||a.role===filters.role)&&(filters.portal==="All"||a.portal===filters.portal)&&(filters.stage==="All"||a.stage===filters.stage));
+    return<div className="fade">
+      <div style={{display:"flex",gap:"6px",marginBottom:"10px",flexWrap:"wrap"}}>
+        {[["role",["All",...ROLES_T.map(r=>r.label)]],["portal",["All",...PORTALS]],["stage",["All",...STAGES]]].map(([key,opts])=>(
+          <select key={key} value={filters[key]} onChange={e=>setFilters(f=>({...f,[key]:e.target.value}))} style={{...inp,width:"auto",fontSize:"12px"}}>{opts.map(o=><option key={o}>{o}</option>)}</select>
+        ))}
+      </div>
+      <div style={{fontSize:"11px",color:"#aaa",marginBottom:"10px"}}>{filtered.length} application{filtered.length!==1?"s":""}</div>
+      {filtered.length===0&&<div style={{padding:"2rem 0",textAlign:"center",color:"#aaa",fontSize:"13px"}}>No applications yet. Hit "+ Log App" to start.</div>}
+      {filtered.map(a=>(
+        <div key={a.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"10px 0",borderBottom:"0.5px solid #f0f0ea"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap",marginBottom:"3px"}}>
+              <span style={{fontSize:"13px",fontWeight:600}}>{a.company}</span>
+              <span style={pill(a.stage)}>{a.stage}</span>
+              {a.isReferral&&<span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"999px",background:"#EEEDFE",color:"#3C3489",fontWeight:600}}>Referral</span>}
+            </div>
+            <div style={{fontSize:"11px",color:"#888"}}>{a.role.split(" ").slice(0,3).join(" ")}  ·  {a.portal}  ·  {a.date}{a.ctc?`  ·  ${a.ctc}`:""}</div>
+            {a.notes&&<div style={{fontSize:"11px",color:"#bbb",marginTop:"2px"}}>{a.notes.slice(0,90)}{a.notes.length>90?"…":""}</div>}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:"4px",flexShrink:0}}>
+            <select value={a.stage} onChange={e=>updateStage(a.id,e.target.value)} style={{fontSize:"11px",padding:"3px 6px",borderRadius:"6px",border:"0.5px solid #d3d1c7",background:"#f5f5f0",cursor:"pointer",color:"#1a1a1a"}}>{STAGES.map(s=><option key={s}>{s}</option>)}</select>
+            <div style={{display:"flex",gap:"4px"}}>
+              <button onClick={()=>startEdit(a)} style={{...btnO,fontSize:"11px",padding:"3px 8px"}}>Edit</button>
+              <button onClick={()=>deleteApp(a.id)} style={{fontSize:"11px",padding:"3px 8px",borderRadius:"6px",border:"0.5px solid #f09595",background:"transparent",color:"#A32D2D",cursor:"pointer"}}>Del</button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>;
+  };
+
+  // ── ADD FORM ───────────────────────────────────────────────────────────────
+  const AddForm=()=>(
+    <div className="fade">
+      <div style={{fontSize:"15px",fontWeight:700,marginBottom:"1rem"}}>{editId?"Edit application":"Log a new application"}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+        {[{label:"Company *",key:"company",type:"text",placeholder:"e.g. Deloitte"},{label:"Date applied",key:"date",type:"date"}].map(f=>(
+          <div key={f.key}><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>{f.label}</div><input type={f.type} value={form[f.key]} placeholder={f.placeholder||""} onChange={e=>setForm(f2=>({...f2,[f.key]:e.target.value}))} style={inp}/></div>
+        ))}
+        <div><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>Resume version</div><select value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} style={inp}>{ROLES_T.map(r=><option key={r.id}>{r.label}</option>)}</select></div>
+        <div><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>Portal</div><select value={form.portal} onChange={e=>setForm(f=>({...f,portal:e.target.value}))} style={inp}>{PORTALS.map(p=><option key={p}>{p}</option>)}</select></div>
+        <div><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>Stage</div><select value={form.stage} onChange={e=>setForm(f=>({...f,stage:e.target.value}))} style={inp}>{STAGES.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>Expected CTC</div><input value={form.ctc} placeholder="e.g. 25L" onChange={e=>setForm(f=>({...f,ctc:e.target.value}))} style={inp}/></div>
+      </div>
+      <div style={{marginBottom:"10px"}}><div style={{fontSize:"12px",color:"#888",marginBottom:"3px"}}>Notes</div><textarea value={form.notes} placeholder="Referral contact, JD keywords, interview notes…" onChange={e=>setForm(f=>({...f,notes:e.target.value}))} style={{...inp,minHeight:"60px"}}/></div>
+      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px"}}>
+        <input type="checkbox" id="ref" checked={form.isReferral} onChange={e=>setForm(f=>({...f,isReferral:e.target.checked}))} style={{cursor:"pointer",width:"auto"}}/>
+        <label htmlFor="ref" style={{fontSize:"12px",color:"#666",cursor:"pointer"}}>This was a referral or direct recruiter outreach</label>
+      </div>
+      <div style={{display:"flex",gap:"8px"}}>
+        <button onClick={submitApp} style={btnP("#1a1a1a")}>{editId?"Save changes":"Log application"}</button>
+        <button onClick={()=>{setEditId(null);resetForm();setTab("applications");}} style={btnO}>Cancel</button>
+      </div>
+    </div>
+  );
+
+  // ── BENCHMARKS ─────────────────────────────────────────────────────────────
+  const Benchmarks=()=>(
+    <div className="fade">
+      <div style={secLbl}>Weekly commitments</div>
+      {[{label:"Total applications",target:W_TARGET,actual:twCount,color:"#EF9F27"},{label:"iimjobs / Naukri applications",target:4,actual:twApps.filter(a=>["iimjobs","Naukri"].includes(a.portal)).length,color:"#534AB7"},{label:"Referral / recruiter outreach",target:R_TARGET,actual:twRef,color:"#378ADD"},{label:"Company direct applications",target:2,actual:twApps.filter(a=>a.portal==="Company Direct").length,color:"#1D9E75"},{label:"Wellfound / startup apps",target:1,actual:twApps.filter(a=>["Wellfound","CutShort"].includes(a.portal)).length,color:"#993C1D"}].map(b=>{
+        const pct=Math.min(100,Math.round((b.actual/b.target)*100));
+        return<div key={b.label} style={{...card,marginBottom:"8px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}><span style={{fontSize:"13px",fontWeight:500}}>{b.label}</span><span style={{fontSize:"12px",color:pct>=100?"#1D9E75":"#888"}}>{b.actual}/{b.target}</span></div>
+          {pBar(pct,pct>=100?"#1D9E75":b.color)}
+          <div style={{fontSize:"11px",color:"#bbb",marginTop:"3px"}}>{pct>=100?"Done ✓":`${b.target-b.actual} remaining`}</div>
+        </div>;
+      })}
+      <div style={secLbl}>Daily schedule</div>
+      {[{time:"Morning (10 min)",task:"Scan LinkedIn + Naukri alerts. Apply same day — response rate drops after 48hrs.",tag:"Every day"},{time:"Tue / Thu / Sat",task:"Send 1 LinkedIn DM: referral or recruiter. Name the role + IIT + Cars24.",tag:"3x/week"},{time:"Sunday (20 min)",task:"Check direct career pages: Google, Microsoft, Deloitte, Accenture, Wells Fargo, EY.",tag:"Weekly"},{time:"Before each interview",task:"Open JD Interview Prep tab. Generate prep for that specific JD. Rehearse out loud twice.",tag:"Every interview"}].map((s,i)=>(
+        <div key={i} style={{...card,marginBottom:"8px",display:"flex",justifyContent:"space-between",gap:"10px",flexWrap:"wrap"}}>
+          <div><div style={{fontSize:"12px",fontWeight:600,marginBottom:"3px"}}>{s.time}</div><div style={{fontSize:"12px",color:"#555",lineHeight:"1.5"}}>{s.task}</div></div>
+          <span style={{fontSize:"10px",padding:"2px 9px",borderRadius:"999px",background:"#f0f0ea",color:"#888",whiteSpace:"nowrap",alignSelf:"flex-start"}}>{s.tag}</span>
+        </div>
+      ))}
+    </div>
+  );
+
+  // ── JD INTERVIEW PREP ──────────────────────────────────────────────────────
+  const JDPrep=()=>{
+    const pr=jdPrepResult;
+    if(!pr) return(
+      <div className="fade">
+        <div style={{marginBottom:"1rem"}}>
+          <div style={{fontSize:"16px",fontWeight:700,marginBottom:"3px"}}>JD Interview Prep</div>
+          <div style={{fontSize:"12px",color:"#888",lineHeight:"1.5"}}>Paste the full JD → get a complete interview prep kit: intro script, STAR answers, guesstimates, culture Q&A, salary negotiation, reverse questions, red flags, and a 30-60-90 plan. All based on your actual experience.</div>
+        </div>
+        <div style={{fontSize:"11px",color:"#aaa",marginBottom:"8px",lineHeight:"1.5"}}>
+          Copy everything from the job page (Ctrl+A, Ctrl+C) and paste below. The more text, the better the tailoring.
+        </div>
+        <textarea value={jdPrepText} onChange={e=>setJdPrepText(e.target.value)} placeholder="Paste the full job description here — company name, about the company, role title, responsibilities, requirements, qualifications, culture…" style={{...inp,minHeight:"180px",marginBottom:"12px"}}/>
+        <button onClick={()=>{if(!jdPrepText.trim()){showToast("Paste a JD first");return;}setJdPrepResult(generateJDPrep(jdPrepText));setPrepCat("intro");setOpenPrepQ(null);}} style={btnP("#1a1a1a")}>Generate full prep kit →</button>
+      </div>
+    );
+
+    const catData={
+      intro:{label:"60-sec Intro",content:<div style={{background:"#f9f9f7",borderRadius:"8px",padding:"14px",borderLeft:"3px solid #1a1a1a",whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333"}}>{pr.intro}</div>},
+      star:{label:`STAR Questions (${pr.star.length})`,content:<div>{pr.star.map((q,i)=>{const open=openPrepQ===`s${i}`;return<div key={i} style={{...card,marginBottom:"8px",cursor:"pointer"}} onClick={()=>setOpenPrepQ(open?null:`s${i}`)}>
+        <div style={{display:"flex",gap:"8px",justifyContent:"space-between"}}>
+          <div style={{fontSize:"13px",fontWeight:600,flex:1,lineHeight:"1.4"}}><span style={{color:"#aaa",fontSize:"11px",marginRight:"6px"}}>Q{i+1}</span>{q.q}</div>
+          <span style={{fontSize:"14px",color:"#aaa",transform:open?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+        </div>
+        {open&&<div style={{marginTop:"12px",borderTop:"0.5px solid #f0f0ea",paddingTop:"12px"}}>
+          <div style={{whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333",background:"#f9f9f7",borderRadius:"8px",padding:"12px",borderLeft:"3px solid #1D9E75",marginBottom:"8px"}}>{q.a}</div>
+          <div style={{background:"#fffbee",border:"0.5px solid #f0c060",borderRadius:"6px",padding:"8px 10px",fontSize:"11px",color:"#7a5500"}}><strong>Tip: </strong>{q.tip}</div>
+        </div>}
+      </div>;})}</div>},
+      guesstimates:{label:"Guesstimates",content:<div>{pr.guesstimates.map((g,i)=>{const open=openPrepQ===`g${i}`;return<div key={i} style={{...card,marginBottom:"8px",cursor:"pointer"}} onClick={()=>setOpenPrepQ(open?null:`g${i}`)}>
+        <div style={{display:"flex",gap:"8px",justifyContent:"space-between"}}>
+          <div style={{fontSize:"13px",fontWeight:600,flex:1,lineHeight:"1.4"}}>{g.q}</div>
+          <span style={{fontSize:"14px",color:"#aaa",transform:open?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+        </div>
+        {open&&<div style={{marginTop:"12px",borderTop:"0.5px solid #f0f0ea",paddingTop:"12px",whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333",background:"#f9f9f7",borderRadius:"8px",padding:"12px",borderLeft:"3px solid #534AB7"}}>{g.approach}</div>}
+      </div>;})}</div>},
+      culture:{label:"Culture & Values",content:<div>
+        <div style={{...card,background:pr.bestRoleId?ROLES_T.find(r=>r.id===pr.bestRoleId)?.color+"0d":"#f9f9f7",marginBottom:"1rem"}}>
+          <div style={{fontSize:"11px",fontWeight:700,color:"#666",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"4px"}}>Company type: {pr.companyType}</div>
+          <div style={{fontSize:"12px",color:"#555",lineHeight:"1.6"}}>{pr.culture.typeNote}</div>
+        </div>
+        {pr.culture.questions.map((q,i)=>{const open=openPrepQ===`c${i}`;return<div key={i} style={{...card,marginBottom:"8px",cursor:"pointer"}} onClick={()=>setOpenPrepQ(open?null:`c${i}`)}>
+          <div style={{display:"flex",gap:"8px",justifyContent:"space-between"}}>
+            <div style={{fontSize:"13px",fontWeight:600,flex:1,lineHeight:"1.4"}}>{q.q}</div>
+            <span style={{fontSize:"14px",color:"#aaa",transform:open?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+          </div>
+          {open&&<div style={{marginTop:"12px",borderTop:"0.5px solid #f0f0ea",paddingTop:"12px"}}>
+            <div style={{whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333",background:"#f9f9f7",borderRadius:"8px",padding:"12px",borderLeft:"3px solid #993C1D",marginBottom:"8px"}}>{q.script}</div>
+            <div style={{background:"#fffbee",border:"0.5px solid #f0c060",borderRadius:"6px",padding:"8px 10px",fontSize:"11px",color:"#7a5500"}}><strong>Tip: </strong>{q.tip}</div>
+          </div>}
+        </div>;})}
+      </div>},
+      salary:{label:"Salary Script",content:<div style={{background:"#f9f9f7",borderRadius:"8px",padding:"14px",borderLeft:"3px solid #1D9E75",whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333"}}>{pr.salary}</div>},
+      reverse:{label:"Reverse Questions",content:<div>
+        <div style={{fontSize:"12px",color:"#888",marginBottom:"12px",lineHeight:"1.5"}}>Ask 3-4 of these. Always end with a question — it signals genuine interest and gives you information. Never ask about salary or leave in the first round.</div>
+        {pr.reverse.map((r,i)=>(
+          <div key={i} style={{...card,marginBottom:"8px",display:"flex",gap:"12px",alignItems:"flex-start"}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:"13px",fontWeight:500,marginBottom:"3px"}}>{r.q}</div>
+              <div style={{fontSize:"11px",color:"#aaa"}}>{r.note}</div>
+            </div>
+          </div>
+        ))}
+      </div>},
+      redflags:{label:"Red Flags",content:<div>
+        <div style={{fontSize:"12px",color:"#888",marginBottom:"12px",lineHeight:"1.5"}}>Things NOT to say or do. Print this and read it the morning of the interview.</div>
+        {pr.redflags.map((f,i)=>(
+          <div key={i} style={{...card,marginBottom:"8px",background:"#FCEBEB",border:"0.5px solid #F09595",display:"flex",gap:"10px"}}>
+            <span style={{fontSize:"16px",flexShrink:0,marginTop:"1px"}}>✕</span>
+            <div style={{fontSize:"12px",color:"#A32D2D",lineHeight:"1.6"}}>{f}</div>
+          </div>
+        ))}
+      </div>},
+      plan:{label:"30-60-90 Plan",content:<div style={{background:"#f9f9f7",borderRadius:"8px",padding:"14px",borderLeft:"3px solid #185FA5",whiteSpace:"pre-wrap",fontSize:"12px",lineHeight:"1.75",color:"#333"}}>{pr.plan}</div>},
+    };
+
+    return(
+      <div className="fade">
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"1rem",gap:"8px",flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:"15px",fontWeight:700}}>Prep for <span style={{color:ROLES_T.find(r=>r.id===pr.bestRoleId)?.color||"#1a1a1a"}}>{pr.roleTitle}</span></div>
+            <div style={{fontSize:"12px",color:"#888"}}>{pr.company}  ·  {pr.companyType}  ·  Best resume: {pr.bestRoleLabel}</div>
+          </div>
+          <button onClick={()=>{setJdPrepResult(null);setJdPrepText("");}} style={btnO}>← New JD</button>
+        </div>
+        <div style={{...card,background:"#EAF3DE",border:"0.5px solid #a0c878",marginBottom:"1rem"}}>
+          <div style={{fontSize:"11px",fontWeight:700,color:"#27500A",textTransform:"uppercase",letterSpacing:".04em",marginBottom:"4px"}}>Recommended resume version</div>
+          <div style={{fontSize:"13px",color:"#27500A",fontWeight:600,marginBottom:"4px"}}>{pr.bestRoleLabel}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"6px"}}>
+            {ROLES_T.map(r=>{const s=pr.scores[r.id]||0;const max=Math.max(...Object.values(pr.scores));return<span key={r.id} style={{fontSize:"11px",padding:"2px 9px",borderRadius:"999px",background:r.id===pr.bestRoleId?r.color:"#f0f0ea",color:r.id===pr.bestRoleId?"#fff":"#888"}}>{r.label.split(" ").slice(0,2).join(" ")} {max>0?Math.round((s/max)*100)+"%":""}</span>;})}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"1rem"}}>
+          {PREP_CATS.map(([id,label])=>(
+            <button key={id} onClick={()=>{setPrepCat(id);setOpenPrepQ(null);}} style={{fontSize:"12px",padding:"6px 13px",borderRadius:"8px",border:prepCat===id?"1.5px solid #1a1a1a":"0.5px solid #d3d1c7",background:prepCat===id?"#1a1a1a":"transparent",color:prepCat===id?"#fff":"#555",cursor:"pointer",fontWeight:prepCat===id?600:400}}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="fade" key={prepCat}>{catData[prepCat]?.content}</div>
+      </div>
+    );
+  };
+
+  // ── RESUME TAILOR ──────────────────────────────────────────────────────────
+  const ResumeTailor=()=>{
+    if(tStep==="result"&&tResult){
+      const totalChanged=(tResult.sections||[]).reduce((a,s)=>a+(s.bullets||[]).filter(b=>b.changed).length,0);
+      return<div className="fade">
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:"1rem",flexWrap:"wrap",gap:"8px"}}>
+          <div>
+            <div style={{fontSize:"15px",fontWeight:700}}>Tailored for <span style={{color:tRole.color}}>{tResult.role_title}</span></div>
+            <div style={{fontSize:"12px",color:"#888"}}>{tResult.company_name}  ·  {tRole.label}</div>
+          </div>
+          <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+            <button onClick={()=>{setTStep("input");setTResult(null);setDocxUrl(null);}} style={btnO}>← New JD</button>
+            <button onClick={downloadDocx} disabled={downloading} style={{...btnP(tRole.color),opacity:downloading?0.7:1}}>{downloading?"Generating…":"Download .docx"}</button>
+          </div>
+        </div>
+        {docxUrl&&<div style={{...card,background:"#EAF3DE",border:"0.5px solid #a0c878",marginBottom:"1rem",display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{flex:1,fontSize:"12px",color:"#27500A"}}>On mobile, tap the button to open the document, then use your browser's share/download option to save it.</div>
+          <a href={docxUrl.url} download={docxUrl.fname} style={{...btnP("#27500A"),textDecoration:"none",fontSize:"12px"}}>Tap to save .docx</a>
+        </div>}
+        <div style={{display:"flex",gap:"6px",marginBottom:"1rem",flexWrap:"wrap"}}>
+          {[["overview","Overview"],["bullets","Bullets"],["keywords","Keywords"]].map(([v,l])=>(
+            <button key={v} onClick={()=>setTTab(v)} style={{fontSize:"12px",padding:"6px 13px",borderRadius:"8px",border:tTab===v?`1.5px solid ${tRole.color}`:"0.5px solid #d3d1c7",background:tTab===v?tRole.color+"22":"transparent",color:tTab===v?tRole.color:"#555",cursor:"pointer"}}>{l}</button>
+          ))}
+        </div>
+        {tTab==="overview"&&<div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"1rem"}}>
+            {[{n:`${tResult.match_score}%`,l:"ATS match",c:tResult.match_score>=80?"#1D9E75":tResult.match_score>=60?"#EF9F27":"#E24B4A"},{n:totalChanged,l:"Bullets reordered",c:tRole.color},{n:(tResult.missing_keywords||[]).length,l:"Keywords to add",c:"#E24B4A"}].map((m,i)=>(
+              <div key={i} style={{background:"#f5f5f0",borderRadius:"8px",padding:"12px",textAlign:"center"}}><div style={{fontSize:"24px",fontWeight:700,color:m.c}}>{m.n}</div><div style={{fontSize:"11px",color:"#888",marginTop:"2px"}}>{m.l}</div></div>
+            ))}
+          </div>
+          {tResult.top_tip&&<div style={{...card,background:"#fffbee",border:"0.5px solid #f0c060"}}><div style={{fontSize:"10px",fontWeight:700,color:"#a07010",textTransform:"uppercase",letterSpacing:".05em",marginBottom:"6px"}}>Top tip</div><div style={{fontSize:"13px",color:"#7a5500",lineHeight:"1.6"}}>{tResult.top_tip}</div></div>}
+          {tResult.roleRecs&&<div style={card}><div style={{fontSize:"11px",fontWeight:600,color:"#888",marginBottom:"8px",textTransform:"uppercase",letterSpacing:".05em"}}>Resume version scores for this JD</div>{tResult.roleRecs.map(r=><div key={r.id} style={{marginBottom:"7px"}}><div style={{display:"flex",alignItems:"center",gap:"8px"}}><span style={{fontSize:"11px",color:r.id===tRoleId?r.color:"#666",fontWeight:r.id===tRoleId?700:400,width:"180px",flexShrink:0}}>{r.label.split(" ").slice(0,3).join(" ")}{r.id===tRoleId?" ← current":""}</span><div style={{flex:1,height:"5px",background:"#f0f0ea",borderRadius:"3px",overflow:"hidden"}}><div style={{width:r.matchPct+"%",height:"100%",background:r.id===tRoleId?r.color:"#d3d1c7",borderRadius:"3px"}}/></div><span style={{fontSize:"11px",color:"#888",width:"32px",textAlign:"right"}}>{r.matchPct}%</span></div></div>)}</div>}
+        </div>}
+        {tTab==="bullets"&&<div>
+          <div style={{fontSize:"12px",color:"#888",marginBottom:"1rem",lineHeight:"1.5"}}>Most JD-relevant bullets moved to top of each section. Metrics kept exact.</div>
+          {(tResult.sections||[]).map((sec,si)=>(
+            <div key={si} style={{marginBottom:"1.25rem"}}>
+              <div style={{fontSize:"12px",fontWeight:700,color:tRole.color,marginBottom:"8px",paddingLeft:"8px",borderLeft:`2px solid ${tRole.color}`}}>{sec.role}{sec.dates?`  ·  ${sec.dates}`:""}</div>
+              {(sec.bullets||[]).map((b,bi)=>(
+                <div key={bi} style={{...card,marginBottom:"6px",display:"flex",gap:"8px",alignItems:"flex-start"}}>
+                  <div style={{fontSize:"12px",color:b.changed?"#aaa":"#1a1a1a",lineHeight:"1.6",flex:1,textDecoration:b.changed?"none":"none"}}>{b.changed?"↑ ":""}{b.original}</div>
+                  <span style={{fontSize:"10px",padding:"2px 8px",borderRadius:"999px",background:b.changed?"#EAF3DE":"#f1efea",color:b.changed?"#27500A":"#888",fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>{b.changed?"Moved up":"Same"}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>}
+        {tTab==="keywords"&&<div>
+          <div style={secLbl}>ATS keywords from this JD</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginBottom:"1.25rem"}}>{(tResult.ats_keywords||[]).map((k,i)=><span key={i} style={{fontSize:"12px",padding:"4px 12px",borderRadius:"999px",background:tRole.color+"11",color:tRole.color,border:`0.5px solid ${tRole.color}55`}}>{k}</span>)}</div>
+          <div style={secLbl}>Missing from your resume — weave these in</div>
+          {(tResult.missing_keywords||[]).length===0
+            ?<div style={{fontSize:"12px",color:"#1D9E75",padding:"8px 0"}}>No critical keywords missing — strong match!</div>
+            :<div style={{display:"flex",flexWrap:"wrap",gap:"6px",marginBottom:"1rem"}}>{tResult.missing_keywords.map((k,i)=><span key={i} style={{fontSize:"12px",padding:"4px 12px",borderRadius:"999px",background:"#FCEBEB",color:"#A32D2D",border:"0.5px solid #F09595"}}>{k}</span>)}</div>
+          }
+        </div>}
+      </div>;
+    }
+    return<div className="fade">
+      <div style={{marginBottom:"1.25rem"}}>
+        <div style={{fontSize:"16px",fontWeight:700,marginBottom:"3px"}}>Resume Tailor</div>
+        <div style={{fontSize:"12px",color:"#888"}}>Paste any JD → scores all 5 resume versions, recommends the best, reorders your bullets by relevance, downloads .docx.</div>
+      </div>
+      <div style={secLbl}>Step 1 — Choose resume version (or let it recommend)</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"6px",marginBottom:"1.25rem"}}>
+        {ROLES_T.map(r=><div key={r.id} onClick={()=>setTRoleId(r.id)} style={{border:tRoleId===r.id?`1.5px solid ${r.color}`:"0.5px solid #e0deda",borderRadius:"8px",padding:"10px 12px",background:tRoleId===r.id?r.color+"11":"#fff",cursor:"pointer"}}>
+          <div style={{fontSize:"12px",fontWeight:tRoleId===r.id?700:400,color:tRoleId===r.id?r.color:"#1a1a1a"}}>{r.label}</div>
+        </div>)}
+      </div>
+      <div style={{fontSize:"11px",color:"#aaa",marginBottom:"8px"}}>Not sure which to pick? Paste the JD and hit "Tailor" — it will score all 5 versions and recommend the best one automatically.</div>
+      <div style={secLbl}>Step 2 — Paste the job description</div>
+      <textarea value={jdTailorText} onChange={e=>setJdTailorText(e.target.value)} placeholder="Paste the full job description here…" style={{...inp,minHeight:"140px",marginBottom:"12px"}}/>
+      <button onClick={runTailorOffline} style={btnP(tRole.color)}>Tailor + recommend version →</button>
+    </div>;
+  };
+
+  // ── SETTINGS MODAL ─────────────────────────────────────────────────────────
+  const SettingsModal=()=>(
+    <div className="modal-bg" onClick={()=>setShowSettings(false)}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:"16px",fontWeight:700,marginBottom:"4px"}}>Settings & Sync</div>
+        <div style={{fontSize:"12px",color:"#888",marginBottom:"1.25rem",lineHeight:"1.5"}}>
+          Sync status: <strong style={{color:syncStatus==="synced"?"#1D9E75":syncStatus==="syncing"?"#EF9F27":syncStatus==="error"?"#A32D2D":"#888"}}>{syncStatus==="local"?"Local only (not synced)":syncStatus==="syncing"?"Syncing…":syncStatus==="synced"?"Synced to Google Sheets":"Sync error — check URL"}</strong>
+        </div>
+        <div style={{fontSize:"13px",fontWeight:600,marginBottom:"6px"}}>Google Sheets sync URL</div>
+        <div style={{fontSize:"12px",color:"#888",marginBottom:"8px",lineHeight:"1.5"}}>Paste your Google Apps Script Web App URL here to sync data across all devices. See setup instructions below.</div>
+        <input value={tempUrl} onChange={e=>setTempUrl(e.target.value)} placeholder="https://script.google.com/macros/s/..." style={{...inp,marginBottom:"10px"}}/>
+        <div style={{display:"flex",gap:"8px",marginBottom:"1.25rem"}}>
+          <button onClick={()=>{saveScriptUrl(tempUrl);showToast("URL saved! Syncing…");setShowSettings(false);}} style={btnP("#1a1a1a")}>Save & sync</button>
+          {scriptUrl&&<button onClick={()=>{saveScriptUrl("");showToast("Sync disabled");}} style={btnO}>Remove</button>}
+        </div>
+        <div style={{background:"#f5f5f0",borderRadius:"10px",padding:"1rem"}}>
+          <div style={{fontSize:"12px",fontWeight:700,marginBottom:"8px"}}>Setup guide (10 min, free)</div>
+          {[
+            {n:"1",t:"Create Google Sheet",d:"Go to sheets.google.com → create a new blank sheet → name it anything (e.g. 'Job HQ Data')"},
+            {n:"2",t:"Open Apps Script",d:"In the sheet: Extensions → Apps Script → delete all existing code"},
+            {n:"3",t:"Paste the script",d:"Copy the Apps Script code from the instructions file provided with this tool → paste it → click Save"},
+            {n:"4",t:"Deploy as Web App",d:"Click Deploy → New deployment → Type: Web app → Execute as: Me → Who has access: Anyone → Deploy → Copy the Web app URL"},
+            {n:"5",t:"Paste URL here",d:"Paste the URL above and click Save & sync. Done — your data now syncs to Google Sheets across all devices."},
+          ].map((s,i)=>(
+            <div key={i} style={{display:"flex",gap:"10px",marginBottom:"10px"}}>
+              <div style={{width:"22px",height:"22px",borderRadius:"50%",background:"#1a1a1a",color:"#fff",fontSize:"11px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{s.n}</div>
+              <div><div style={{fontSize:"12px",fontWeight:600,marginBottom:"2px"}}>{s.t}</div><div style={{fontSize:"11px",color:"#888",lineHeight:"1.5"}}>{s.d}</div></div>
+            </div>
+          ))}
+        </div>
+        <button onClick={()=>setShowSettings(false)} style={{...btnO,marginTop:"1rem",width:"100%",textAlign:"center"}}>Close</button>
+      </div>
+    </div>
+  );
+
+  return(
+    <div>
+      {toast&&<div style={{position:"fixed",bottom:"24px",left:"50%",transform:"translateX(-50%)",background:"#1a1a1a",color:"#fff",padding:"8px 20px",borderRadius:"999px",fontSize:"12px",zIndex:9999,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.2)"}}>{toast}</div>}
+      {showSettings&&<SettingsModal/>}
+
+      <div style={{marginBottom:"1.25rem",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px"}}>
+        <div>
+          <div style={{fontSize:"19px",fontWeight:700,marginBottom:"2px"}}>Job Switch HQ</div>
+          <div style={{fontSize:"11px",color:"#888"}}>Gunadeep Sai  ·  IIT BHU  ·  Cars24  ·  Hyderabad  ·  Target: 20–35L</div>
+        </div>
+        <button onClick={()=>setShowSettings(true)} style={{...btnO,fontSize:"18px",padding:"4px 10px",lineHeight:1}} title="Settings & Sync">⚙</button>
+      </div>
+
+      <div style={{display:"flex",gap:"4px",flexWrap:"wrap",marginBottom:"1.25rem",borderBottom:"1px solid #e8e6e0",paddingBottom:"10px"}}>
+        {TABS.map(([v,l])=>{
+          const isAdd=v==="add";const active=tab===v;
+          return<button key={v} onClick={()=>{if(isAdd){resetForm();setEditId(null);}setTab(v);}} style={{fontSize:"12px",padding:"6px 12px",borderRadius:"8px",border:active?"1.5px solid #1a1a1a":isAdd?"0.5px solid #d3d1c7":"none",background:active?"#1a1a1a":isAdd?"transparent":"transparent",color:active?"#fff":isAdd?"#555":"#888",cursor:"pointer",fontWeight:active?600:400}}>{l}</button>;
+        })}
+      </div>
+
+      {tab==="dashboard"&&<Dashboard/>}
+      {tab==="applications"&&<Applications/>}
+      {tab==="add"&&<AddForm/>}
+      {tab==="jdprep"&&<JDPrep/>}
+      {tab==="tailor"&&<ResumeTailor/>}
+      {tab==="benchmarks"&&<Benchmarks/>}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
